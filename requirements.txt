@@ -1,0 +1,27 @@
+# Core dependencies for ocr.py
+portkey-ai>=0.5.0
+python-dotenv>=1.0.0
+
+# Dependencies for truncated.ipynb (v1 implementation)
+openai>=1.0.0
+crewai>=0.28.0
+easyocr>=1.7.0
+PyPDF2>=3.0.0
+pdfminer.six>=20221105
+pdf2image>=1.16.3
+numpy>=1.24.0
+langchain>=0.0.267
+langchain-community>=0.0.10
+chromadb>=0.4.18
+python-dotenv==1.0.1
+streamlit==1.37.0
+langchain-community==0.2.10
+langchain-text-splitters==0.2.2
+langchain-groq==0.1.9
+unstructured
+unstructured[pdf]
+faiss-cpu
+transformers==4.43.3
+sentence-transformers==3.0.1
+nltk==3.9.1
+pi_heif

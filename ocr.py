@@ -3,6 +3,8 @@ import os
 from dotenv import load_dotenv
 import pathlib
 import base64
+import json
+import re
 load_dotenv(override=True)
 
 portkey = Portkey(
@@ -16,7 +18,7 @@ pdf_count = 0
 
 # Count actual PDF files
 for pdf_dir in os.listdir(base_path):
-    if pdf_dir.endswith('.pdf'):  # Directory names end with .pdf
+    if pdf_dir.endswith('2008-53-002.pdf'):  # Directory names end with .pdf
         filename = pdf_dir[:-4]  # Remove .pdf extension
         pdf_path = os.path.join(base_path, pdf_dir, f"{filename}.pdf")
         
@@ -38,12 +40,13 @@ for pdf_dir in os.listdir(base_path):
                         "\n   - Include title, sections, dates, and associated details." + \
                         "\n   - Exclude unrelated content or other executive orders." + \
                         "\n\n4. If the file name contains \"03\" or \"33\", assume it is a Public Land Order and confirm that multiple orders may exist in the document. Still, extract only the one matching the number in the file name (e.g., \"7606\")." + \
-                        "\n\n5. If no matching executive order is found in the document, perform OCR on the entire document and return all the text content. Preserve the document structure as much as possible, including headings, paragraphs, and any multi-column format." + \
+                        "\n\n5. If no matching executive order is found in the document and it's not a multiple-column document, perform OCR on the entire document and return all the text content. Preserve the document structure as much as possible, including headings, paragraphs, and any multi-column format." + \
                         "\n\n6. IMPORTANT: Process ALL pages of the document, even if they appear to have lower quality or are difficult to read. Make your best effort to extract text from every page and do not skip pages that seem to have lower quality." + \
                         "\n\n7. IMPORTANT: You must return your results in valid JSON format with the following structure:" + \
                         "\n```json" + \
                         "\n{" + \
                         "\n  \"filename\": \"string\", // The original filename" + \
+                        "\n  \"is_multiple_column\": true/false, // Whether the document is a multiple-column document" + \
                         "\n  \"matched_order\": true/false, // Whether a specific order matching the filename was found" + \
                         "\n  \"order_number\": \"string\", // The order number if found (e.g., \"7606\")" + \
                         "\n  \"order_title\": \"string\", // The title of the order if found" + \
@@ -75,4 +78,21 @@ for pdf_dir in os.listdir(base_path):
                 model="gemini-2.0-flash"
             )
 
-            print(completion)
+            response_text = completion.choices[0].message.content
+
+            print(response_text)
+
+            json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', response_text)
+
+            if json_match:
+                try:
+                    json_content = json.loads(json_match.group(1).strip())
+                    document_text = json_content.get("document_text", "")
+                except json.JSONDecodeError:
+                    print(f"Failed to parse extracted JSON for {filename}")
+                    document_text = response_text  
+            else:
+                print(f"No JSON block found in response for {filename}")
+
+            with open(os.path.join(base_path, pdf_dir, f"{filename}_llm.txt"), "w") as f:
+                f.write(document_text)
